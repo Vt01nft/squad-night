@@ -7,9 +7,9 @@
  * Server-only: the API key never leaves the server process.
  */
 
-const DEFAULT_MODEL = "gemini-3.8-flash";
-/** Ordered fallbacks when the primary flash model is saturated or hanging. */
-const FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-2.5-flash"];
+const DEFAULT_MODEL = "gemini-3.6-flash";
+/** Ordered fallbacks: verified-stable flash versions before the often-saturated newest. */
+const FALLBACK_MODELS = ["gemini-3.5-flash", "gemini-3.8-flash"];
 const ENDPOINT_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
 export class LlmError extends Error {
