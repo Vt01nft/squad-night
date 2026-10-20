@@ -16,6 +16,9 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Send a JSON body with { members, city? }." }, { status: 400 });
   }
+  if (!body || typeof body !== "object" || !Array.isArray(body.members)) {
+    return NextResponse.json({ error: "Send a JSON body with { members, city? }." }, { status: 400 });
+  }
 
   try {
     const result = await runNegotiation(body);
