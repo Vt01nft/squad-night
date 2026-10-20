@@ -9,42 +9,49 @@ import type { NegotiateResult, PickWithEvidence } from "@/lib/agent/pipeline";
 /**
  * The verdict view. Three jobs, in order of what a judge sees first: the
  * confident answer, the negotiation transcript (evidence), and the
- * counterfactual that shows what a taste-less assistant would have said.
+ * counterfactual that shows what the same model says without Qloo. One
+ * staged reveal on arrival; reduced-motion users skip straight to content.
  */
 
 const AGENT_STEPS = [
-  "Resolving the squad onto the Qloo taste graph…",
-  "Gathering cross-category affinity data…",
-  "Weighing tonight's candidates jointly…",
-  "Negotiating the final pick — some prices you did not pay…",
+  "Resolving the squad onto the Qloo taste graph",
+  "Gathering cross-category affinity data",
+  "Weighing tonight's candidates jointly",
+  "Negotiating the final pick — some prices you did not pay",
 ];
 
 const pct = (affinity: number): string => `${Math.round(affinity * 100)}%`;
 
-const AffinityBar = ({ affinity }: { affinity: number }) => (
-  <div className="mt-4">
+const Meter = ({ affinity }: { affinity: number }) => (
+  <div className="mt-5">
     <div className="flex items-baseline justify-between">
-      <span className="eyebrow text-[0.6rem]">Qloo affinity</span>
-      <span className="font-mono text-xl font-semibold text-accent">{pct(affinity)}</span>
+      <span className="text-xs text-muted">Qloo affinity</span>
+      <span className="num text-lg font-bold text-accent">{pct(affinity)}</span>
     </div>
-    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
-      <div className="h-full rounded-full bg-accent" style={{ width: pct(affinity) }} />
-    </div>
+    <div className="meter mt-2.5" style={{ ["--value" as string]: affinity }} />
+  </div>
+);
+
+const EmptyPick = ({ heading }: { heading: string }) => (
+  <div className="card p-6">
+    <p className="text-xs text-muted">{heading}</p>
+    <p className="mt-2 font-display text-lg text-muted">No candidate backed by enough squad signal.</p>
+    <p className="mt-3 text-sm text-muted">Naming more specific favorites usually fixes this.</p>
   </div>
 );
 
 const PickCard = ({ pick, heading }: { pick: PickWithEvidence; heading: string }) => (
   <div className="card overflow-hidden">
     {pick.imageUrl && (
-      // Qloo image hosts are dynamic per-entity paths; next/image adds no
-      // value here.
+      // Qloo poster URLs are dynamic per entity; next/image would need an
+      // allowlist domain per site. Direct img keeps the people's flow open.
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={pick.imageUrl} alt="" className="h-36 w-full object-cover opacity-80" />
+      <img src={pick.imageUrl} alt="" className="h-40 w-full object-cover opacity-85" />
     )}
     <div className="p-6">
-      <div className="text-xs font-semibold tracking-widest text-muted uppercase">{heading}</div>
-      <div className="mt-2 text-2xl font-semibold tracking-tight text-ink">{pick.title}</div>
-      <AffinityBar affinity={pick.affinity} />
+      <p className="text-xs text-muted">{heading}</p>
+      <p className="mt-1.5 font-display text-2xl font-semibold tracking-[-0.01em] text-ink">{pick.title}</p>
+      <Meter affinity={pick.affinity} />
     </div>
   </div>
 );
@@ -57,17 +64,17 @@ const LoadingSteps = () => {
   }, []);
   return (
     <div className="mx-auto max-w-2xl pt-24">
-      <div className="space-y-4 font-mono text-sm">
+      <ol className="space-y-4 font-mono text-sm">
         {AGENT_STEPS.map((step, index) => (
-          <div
+          <li
             key={step}
             className={index < stepIndex ? "text-muted line-through" : index === stepIndex ? "text-accent" : "text-muted/30"}
           >
             {index < stepIndex ? "✓ " : index === stepIndex ? "▸ " : "  "}
             {step}
-          </div>
+          </li>
         ))}
-      </div>
+      </ol>
     </div>
   );
 };
@@ -107,7 +114,7 @@ export function NegotiationConsole() {
       <div className="min-h-dvh px-6 pt-32 text-center">
         <p className="text-muted">This squad link is empty or malformed.</p>
         <Link href="/night" className="mt-4 inline-block text-accent hover:underline">
-          Start a squad →
+          Start a squad
         </Link>
       </div>
     );
@@ -117,10 +124,10 @@ export function NegotiationConsole() {
     return (
       <div className="min-h-dvh px-6 pt-24">
         <div className="card mx-auto max-w-xl p-8">
-          <div className="text-sm font-semibold tracking-widest text-accent uppercase">Negotiation failed</div>
-          <p className="mt-3 text-muted">{error}</p>
+          <p className="font-display text-xl font-semibold text-ink">The negotiation stopped</p>
+          <p className="mt-3 leading-relaxed text-muted">{error}</p>
           <Link href="/night" className="mt-5 inline-block text-sm text-accent hover:underline">
-            ← Back to the squad
+            Back to the squad room
           </Link>
         </div>
       </div>
@@ -134,83 +141,106 @@ export function NegotiationConsole() {
       <header className="mx-auto flex max-w-4xl items-center justify-between px-6 pt-8">
         <Link href="/" className="flex items-center gap-2.5">
           <div className="h-2.5 w-2.5 rounded-full bg-accent" />
-          <span className="font-mono text-sm font-semibold tracking-[0.2em] uppercase text-ink">Squad Night</span>
+          <span className="font-mono text-sm font-semibold tracking-[0.2em] uppercase text-ink">
+            Squad Night
+          </span>
         </Link>
-        <span className="font-mono text-xs text-muted">
-          {result.meta.groundedFavorites} grounded favorites · {result.meta.qlooCalls} Qloo calls ·{" "}
-          {(result.meta.durationMs / 1000).toFixed(1)}s
+        <span className="num text-right text-[0.68rem] leading-relaxed text-muted">
+          {result.meta.groundedFavorites} grounded favorites,
+          <br />
+          {result.meta.qlooCalls} Qloo calls, {(result.meta.durationMs / 1000).toFixed(1)}s
         </span>
       </header>
 
       <main className="mx-auto max-w-4xl px-6 pb-28 pt-12">
-        <div className="text-xs font-semibold tracking-widest text-accent uppercase">The verdict</div>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-ink md:text-5xl">{result.headline}</h1>
-        <p className="mt-4 text-lg text-muted">{result.squadVibe}</p>
+        {result.movie && result.restaurant && (
+          <h1 className="reveal-item max-w-3xl font-display text-3xl font-medium leading-tight tracking-[-0.015em] text-ink md:text-5xl">
+            {result.headline}
+          </h1>
+        )}
+        <p className="reveal-item mt-4 max-w-xl text-lg text-muted" style={{ ["--step" as string]: 1 }}>
+          {result.squadVibe}
+        </p>
 
         <div className="mt-10 grid gap-5 md:grid-cols-2">
-          <PickCard pick={result.movie} heading="Tonight's film" />
-          <PickCard pick={result.restaurant} heading="Tonight's table" />
+          {result.movie ? (
+            <PickCard pick={result.movie} heading="Tonight's film" />
+          ) : (
+            <EmptyPick heading="Tonight's film" />
+          )}
+          {result.restaurant ? (
+            <PickCard pick={result.restaurant} heading="Tonight's table" />
+          ) : (
+            <EmptyPick heading="Tonight's table" />
+          )}
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
-          <div className="card p-6">
-            <div className="text-xs font-semibold tracking-widest text-muted uppercase">Why this film</div>
-            <p className="mt-3 text-sm leading-relaxed text-ink/90">{result.whyMovie}</p>
+        {(result.whyMovie || result.whyFood) && (
+          <div className="mt-8 grid gap-5 md:grid-cols-2">
+            {result.whyMovie && (
+              <div className="card p-6">
+                <p className="text-xs text-muted">Why this film</p>
+                <p className="mt-3 text-sm leading-relaxed text-ink/95">{result.whyMovie}</p>
+              </div>
+            )}
+            {result.whyFood && (
+              <div className="card p-6">
+                <p className="text-xs text-muted">Why this table</p>
+                <p className="mt-3 text-sm leading-relaxed text-ink/95">{result.whyFood}</p>
+              </div>
+            )}
           </div>
-          <div className="card p-6">
-            <div className="text-xs font-semibold tracking-widest text-muted uppercase">Why this table</div>
-            <p className="mt-3 text-sm leading-relaxed text-ink/90">{result.whyFood}</p>
+        )}
+
+        {result.negotiation.length > 0 && (
+          <div className="card mt-5 p-6">
+            <p className="font-display text-lg font-semibold text-ink">What lost, and by how much</p>
+            <ul className="mt-4 space-y-3">
+              {result.negotiation.map((line, index) => (
+                <li key={index} className="flex gap-3 text-sm leading-relaxed text-ink/95">
+                  <span className="text-accent-deep">✕</span>
+                  {line}
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
+        )}
 
-        <div className="card mt-5 p-6">
-          <div className="text-xs font-semibold tracking-widest text-muted uppercase">The negotiation transcript</div>
-          <ul className="mt-4 space-y-3">
-            {result.negotiation.map((line, index) => (
-              <li key={index} className="flex gap-3 text-sm leading-relaxed text-ink/90">
-                <span className="text-accent">✕</span>
-                {line}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* The Counterfactual — same squad, same model, zero taste data. */}
+        {/* The Counterfactual: same model, same squad inputs, one variable —
+            whether Qloo's taste data is allowed in the room. */}
         <div className="card mt-5 overflow-hidden p-0">
-          <div className="border-b border-line bg-surface-2 px-6 py-4">
-            <span className="text-xs font-semibold tracking-widest text-muted uppercase">
-              Same squad, same language model — the only difference is Qloo
-            </span>
-          </div>
+          <p className="border-b border-line bg-surface-2 px-6 py-4 text-xs text-muted">
+            The same assistant, with and without Qloo&apos;s graph
+          </p>
           <div className="grid md:grid-cols-2">
             <div className="border-b border-line p-6 md:border-b-0 md:border-r">
-              <div className="text-xs font-semibold tracking-widest text-muted uppercase">Without Qloo</div>
-              <div className="mt-3 space-y-1.5 text-sm text-muted">
-                <div>Movie: {result.counterfactual.movie}</div>
-                <div>Dinner: {result.counterfactual.restaurant}</div>
-                <div className="pt-2 text-muted/70 italic">{result.counterfactual.note}</div>
-              </div>
+              <p className="text-xs text-muted">Without Qloo</p>
+              <p className="mt-3 text-sm leading-relaxed text-muted">
+                {result.counterfactual.movie}
+                <br />
+                {result.counterfactual.restaurant}
+              </p>
+              <p className="mt-3 text-xs text-muted/70">{result.counterfactual.note}</p>
             </div>
             <div className="p-6" style={{ background: "var(--accent-soft)" }}>
-              <div className="text-xs font-semibold tracking-widest text-accent uppercase">With Qloo</div>
-              <div className="mt-3 space-y-1.5 text-sm text-ink">
-                <div>Movie: {result.movie.title} — affinity {pct(result.movie.affinity)}</div>
-                <div>Table: {result.restaurant.title} — affinity {pct(result.restaurant.affinity)}</div>
-                <div className="pt-2 text-muted">Both scores are Qloo&apos;s own affinity for your squad.</div>
-              </div>
+              <p className="text-xs font-semibold text-accent">With Qloo</p>
+              <p className="mt-3 text-sm leading-relaxed text-ink">
+                {result.movie ? `${result.movie.title} — ${pct(result.movie.affinity)} affinity` : "no backed candidate"}
+                <br />
+                {result.restaurant
+                  ? `${result.restaurant.title} — ${pct(result.restaurant.affinity)} affinity`
+                  : "no backed candidate"}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Grounding provenance — what Qloo matched, and what it couldn't. */}
         <div className="card mt-5 p-6">
-          <div className="text-xs font-semibold tracking-widest text-muted uppercase">
-            Provenance — how your favorites grounded
-          </div>
+          <p className="font-display text-lg font-semibold text-ink">How the favorites grounded</p>
           <div className="mt-4 space-y-4">
             {result.grounding.map((report) => (
               <div key={report.member}>
-                <div className="text-sm font-semibold text-ink">{report.member}</div>
+                <p className="text-sm font-semibold text-ink">{report.member}</p>
                 <div className="mt-1.5 flex flex-wrap gap-2">
                   {report.resolved.map((entry) => (
                     <span
@@ -221,7 +251,10 @@ export function NegotiationConsole() {
                     </span>
                   ))}
                   {report.notFound.map((input) => (
-                    <span key={input} className="rounded-md border border-line px-2.5 py-1 text-xs text-muted/50 line-through">
+                    <span
+                      key={input}
+                      className="rounded-md border border-line px-2.5 py-1 text-xs text-muted/50 line-through"
+                    >
                       {input} — unresolved
                     </span>
                   ))}
@@ -230,19 +263,20 @@ export function NegotiationConsole() {
             ))}
           </div>
           {result.meta.deadSignalMembers.length > 0 && (
-            <p className="mt-4 text-xs text-muted/70">
-              No resolvable favorites from: {result.meta.deadSignalMembers.join(", ")}.
+            <p className="mt-4 text-xs text-muted">
+              No resolvable favorites from {result.meta.deadSignalMembers.join(" or ")}: their picks
+              carried no signal into the ranking.
             </p>
           )}
         </div>
 
-        <div className="mt-10 flex justify-center">
-          <Link
-            href="/night"
-            className="rounded-xl border border-line px-7 py-4 text-sm text-muted transition-colors hover:text-ink"
-          >
-            Run another squad →
+        <div className="mt-10 flex items-center justify-between">
+          <Link href="/night" className="text-sm text-accent hover:underline">
+            Run another squad
           </Link>
+          <p className="num text-[0.68rem] text-muted">
+            Qloo describes groups, not individuals. Scores are verbatim from the API.
+          </p>
         </div>
       </main>
     </div>

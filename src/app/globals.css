@@ -1,17 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  /* Squad Night: dusk-cinema palette. One warm accent over deep neutrals. */
-  --background: #0a0a0f;
-  --ink: #f4f1ea;
-  --muted: #9a94a8;
-  --surface: #131319;
-  --surface-2: #1a1a23;
-  --line: #26262f;
-  --accent: #ff7a3d;
-  --accent-deep: #c14a18;
-  --accent-soft: rgba(255, 122, 61, 0.12);
-  --good: #5dd39e;
+  /* Squad Night — a printed night plan from a private picture house.
+     Warm paper inks on marquee black; amber poster ink for the single
+     voice of the verdict; tobacco for pressed edges. */
+  --background: #140f0b;
+  --ink: #f3ead9;
+  --muted: #a5977f;
+  --surface: #201913;
+  --surface-2: #282019;
+  --line: #35291d;
+  --accent: #e08a35;
+  --accent-deep: #9c4a26;
+  --accent-soft: rgba(224, 138, 53, 0.13);
+  --good: #7fb069;
 }
 
 @theme inline {
@@ -26,6 +28,7 @@
   --color-accent-soft: var(--accent-soft);
   --color-good: var(--good);
   --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-fraunces);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -35,25 +38,85 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Browser chrome the page didn't draw still carries the design. */
 ::selection {
-  background: var(--accent-soft);
-  color: var(--ink);
+  background: var(--accent);
+  color: var(--background);
 }
 
-/* Card primitive: one surface treatment for every panel in the app. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+input,
+textarea {
+  caret-color: var(--accent);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 999px;
+  border: 2px solid var(--background);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-deep);
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 1rem;
+  border-radius: 0.875rem;
 }
 
-/* Editorial rule above section labels. */
-.eyebrow {
-  border-top: 2px solid var(--accent);
-  display: inline-block;
-  padding-top: 0.5rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-size: 0.6875rem;
-  color: var(--muted);
+/* Receipt numerals: affinity scores, call counts, ticket codes. */
+.num {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Affinity meter: a needle on a rule, not a progress ring. */
+.meter {
+  position: relative;
+  height: 2px;
+  background: var(--line);
+  border-radius: 999px;
+}
+.meter::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--value) * 100% - 5px);
+  top: -5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 2px solid var(--background);
+  box-sizing: border-box;
+}
+
+/* The single authored moment: the verdict arriving. One sequence, one ease. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-item {
+    animation: rise 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--step, 0) * 110ms);
+  }
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

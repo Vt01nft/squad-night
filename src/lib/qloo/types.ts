@@ -3,6 +3,7 @@
  * client, the mock, and the UI.
  */
 export type QlooEntityType =
+  | "urn:entity"
   | "urn:entity:movie"
   | "urn:entity:tv_show"
   | "urn:entity:artist"

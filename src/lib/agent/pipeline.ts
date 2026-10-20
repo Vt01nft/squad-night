@@ -44,8 +44,9 @@ export interface GroundingReport {
 
 export interface NegotiateResult {
   readonly headline: string;
-  readonly movie: PickWithEvidence;
-  readonly restaurant: PickWithEvidence;
+  /** null when the squad's taste data yields no candidate the UI can back. */
+  readonly movie: PickWithEvidence | null;
+  readonly restaurant: PickWithEvidence | null;
   readonly whyMovie: string;
   readonly whyFood: string;
   /** 3 lines about what lost and why — the negotiation transcript. */
@@ -118,11 +119,21 @@ const NARRATOR_SYSTEM = `You are the negotiator of Squad Night, an app that find
 - Keep every field tight: headline <= 90 chars; whyMovie/whyFood <= 45 words; negotiation exactly 3 lines, each <= 30 words, each about a different discarded or losing option with its number; squadVibe <= 25 words.
 Return JSON: {"headline": string, "whyMovie": string, "whyFood": string, "negotiation": [string, string, string], "squadVibe": string}`;
 
-const COUNTERFACTUAL_SYSTEM = `You are a generic AI assistant with NO access to any taste, affinity, or cultural-graph data. You cannot know how any audience's preferences correlate. You are asked what a group of friends should watch and where to eat tonight. Behave honestly like such an assistant: produce safe, mainstream, popularity-flavored picks with generalized reasoning. Return JSON: {"movie": string, "restaurant": string, "note": string} where note, one sentence, is your own justification.`;
+const COUNTERFACTUAL_SYSTEM = `You are a helpful assistant in a chat. The user tells you who is going out tonight and what each person loves, then asks you to pick one film and one dining spot for the group. Answer exactly as you normally would with those inputs alone. Return JSON: {"movie": string, "restaurant": string, "note": string} — note is one sentence of your own reasoning.`;
+
+/** Shown if the no-Qloo pass itself fails; honesty beats a fake contrast. */
+const FALLBACK_COUNTERFACTUAL: { movie: string; restaurant: string; note: string } = {
+  movie: "(the no-Qloo pass returned nothing this run)",
+  restaurant: "(the no-Qloo pass returned nothing this run)",
+  note: "The without-Qloo comparison could not run — this panel is honest about that.",
+};
 
 export const runNegotiation = async (request: NegotiateRequest): Promise<NegotiateResult> => {
   const started = Date.now();
   const members = cleanTeam(request.members);
+  if (members.length > 5) {
+    throw new NegotiateError("Squad Night negotiates up to five people — pick who's honestly coming tonight.", 422);
+  }
   const totalPicks = members.reduce((sum, member) => sum + member.picks.length, 0);
   if (members.length < 2) {
     throw new NegotiateError("A squad needs at least 2 people — that's where the argument starts.", 422);
@@ -132,6 +143,17 @@ export const runNegotiation = async (request: NegotiateRequest): Promise<Negotia
   }
 
   const qloo = createQlooClient();
+
+  // The counterfactual consumes only the squad's raw text, so it races the
+  // Qloo work instead of staging behind the narration. A failure degrades
+  // the panel transparently rather than failing the negotiation.
+  const counterfactualPromise = generateJson<{ movie: string; restaurant: string; note: string }>(
+    COUNTERFACTUAL_SYSTEM,
+    JSON.stringify({
+      squad: members.map((member) => ({ name: member.name, favorites: member.picks })),
+      city: request.city ?? null,
+    }),
+  ).catch(() => null);
 
   // Ground each member's favorites concurrently. Only matched ids carry
   // signal; misses are reported as provenance, never silently dropped.
@@ -202,18 +224,12 @@ export const runNegotiation = async (request: NegotiateRequest): Promise<Negotia
     squadVibe: string;
   }>(NARRATOR_SYSTEM, facts);
 
-  const counterfactual = await generateJson<{ movie: string; restaurant: string; note: string }>(
-    COUNTERFACTUAL_SYSTEM,
-    JSON.stringify({
-      squad: members.map((member) => ({ name: member.name, favorites: member.picks })),
-      city: request.city ?? null,
-    }),
-  );
+  const counterfactual = (await counterfactualPromise) ?? FALLBACK_COUNTERFACTUAL;
 
   return {
     headline: narration.headline,
-    movie: movie ?? { title: "No consensus found", affinity: 0 },
-    restaurant: restaurant ?? { title: "No consensus found", affinity: 0 },
+    movie,
+    restaurant,
     whyMovie: narration.whyMovie,
     whyFood: narration.whyFood,
     negotiation: narration.negotiation.slice(0, 3),
@@ -224,7 +240,8 @@ export const runNegotiation = async (request: NegotiateRequest): Promise<Negotia
     counterfactual,
     meta: {
       groundedFavorites: signalIds.length,
-      qlooCalls: members.length + 2,
+      qlooCalls:
+        members.reduce((count, member) => count + Math.min(member.picks.length, LIMIT), 0) + 2,
       durationMs: Date.now() - started,
       deadSignalMembers,
     },

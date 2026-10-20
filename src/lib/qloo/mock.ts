@@ -42,6 +42,9 @@ export const createMockQlooClient = (): QlooClient => ({
   async ground({ favorites }) {
     await delay(250);
     return favorites.map((input): GroundResult => {
+      // One deterministic miss per input keeps the honest-failure paths
+      // (unresolved inputs, dead members) exercisable without a key.
+      if (hash(input) % 7 === 0) return { input, status: "not_found" };
       const resolved: QlooEntity = {
         entityId: `MOCK-GROUND-${hash(input)}`,
         name: titleCase(input),

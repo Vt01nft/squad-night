@@ -26,7 +26,7 @@ interface QlooApiEntity {
   types?: string[];
   popularity?: number;
   properties?: {
-    release_year?: number;
+    year?: number;
     description?: string;
     image?: { url?: string };
   };
@@ -38,7 +38,7 @@ interface QlooApiEntity {
 const TYPE_MOVIE = "urn:entity:movie";
 const TYPE_PLACE = "urn:entity:place";
 
-/** Best-effort entity type for an entity of unknown primary category. */
+/** Best-effort primary category for an entity; unknown categories stay raw. */
 const detectType = (entity: QlooApiEntity): QlooEntityType => {
   const known = entity.subtype ?? entity.types?.[0] ?? "";
   if (known.includes("movie")) return "urn:entity:movie";
@@ -46,7 +46,9 @@ const detectType = (entity: QlooApiEntity): QlooEntityType => {
   if (known.includes("artist")) return "urn:entity:artist";
   if (known.includes("place")) return "urn:entity:place.restaurant";
   if (known.includes("brand")) return "urn:entity:brand";
-  return "urn:entity:movie";
+  // Unmapped-but-valid Qloo categories keep the pipeline truthful about
+  // what was grounded; the union stays a fixed contract.
+  return "urn:entity";
 };
 
 const toEntity = (api: QlooApiEntity): QlooEntity => ({
@@ -85,8 +87,8 @@ export const createLiveQlooClient = (): QlooClient => {
     return response;
   };
 
-  /** Resolve one free-text favorite. Requires a signal: at least one valid id. */
-  const searchEntity = async (query: string, hint?: QlooEntityType): Promise<QlooApiEntity | null> => {
+  /** Resolve one free-text favorite; returns ranked candidates, best first. */
+  const searchEntity = async (query: string, hint?: QlooEntityType): Promise<QlooApiEntity[]> => {
     const raw = await call(`/search?query=${encodeURIComponent(query)}`);
     const json = (await raw.json()) as { results?: QlooApiEntity[] };
     const results = json.results ?? [];
@@ -94,14 +96,20 @@ export const createLiveQlooClient = (): QlooClient => {
     const preferred = candidateType
       ? results.filter((e) => e.types?.includes(candidateType))
       : results;
-    const pool = preferred.length ? preferred : results;
-    return pool[0] ?? null;
+    return preferred.length ? preferred : results;
   };
 
   const groundOne = async (favorite: string, hint?: QlooEntityType): Promise<GroundResult> => {
-    const matched = await searchEntity(favorite, hint);
+    const candidates = await searchEntity(favorite, hint);
+    const matched = candidates[0];
     if (!matched) return { input: favorite, status: "not_found" };
-    return { input: favorite, status: "matched", matched: toEntity(matched) };
+    return {
+      input: favorite,
+      status: "matched",
+      matched: toEntity(matched),
+      // Runner-up matches are provenance: what your text could also have meant.
+      alternatives: candidates.slice(1, 3).map(toEntity),
+    };
   };
 
   const rank = async (

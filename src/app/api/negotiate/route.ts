@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { NegotiateError, runNegotiation, type NegotiateRequest } from "@/lib/agent/pipeline";
-import { LlmError } from "@/lib/agent/llm";
 
 /**
  * Server-only negotiation endpoint. All Qloo and Gemini traffic happens
@@ -24,9 +23,6 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof NegotiateError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-    if (error instanceof LlmError && error.status === 422) {
-      return NextResponse.json({ error: error.message }, { status: 422 });
     }
     // Unknown failure: report visibly, never fake a result.
     console.error("[negotiate] failed:", error instanceof Error ? error.message : error);

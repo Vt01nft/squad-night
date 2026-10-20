@@ -8,7 +8,7 @@ The problem it solves is group decision paralysis. Picking a film or a restauran
 
 The pipeline runs five steps. Each step maps to a real file.
 
-1. **Normalize** — member names are trimmed (unfilled names become "A friend"), picks are trimmed/CSS-deduplicated and capped at 3 per member. `src/lib/agent/pipeline.ts`
+1. **Normalize** — member names are trimmed (unfilled names become "A friend"), picks are trimmed, emptied ones dropped, and capped at 3 per member. `src/lib/agent/pipeline.ts`
 2. **Ground** — every free-text favorite is resolved (or explicitly not resolved) to a canonical Qloo entity. `src/lib/qloo/live.ts`
 3. **Gather** — all grounded entity ids are sent as one joint signal to rank movie and dining candidates. `src/lib/qloo/live.ts`
 4. **Negotiate** — the winner, per category, is simply Qloo's top-ranked candidate; its affinity score is carried verbatim. `src/lib/agent/pipeline.ts`
@@ -37,21 +37,20 @@ Verified live run for a two-member squad (names and exact inputs marked in redac
 
 **Inputs.**
 
-- Member 1: three free-text favorites, among them "Inception".
-- Member 2: three free-text favorites (marked as favorites 2a–2c in this walkthrough; the same member's set includes "City of God" in the companion re-verification).
-- City: "Lagos" (dining only).
+- Member 1: three free-text favorites, among them "Inception" (the other names are redacted for this walkthrough; every favorite entered is free text in the squad room).
+- Member 2: three free-text favorites, among them "City of God".
+- City: "Lagos" (used for dining only).
 
-**What resolved on the graph.** Each favorite was grounded via `/search`. The Inception and City of God inputs resolved to canonical movie entities; their entity ids joined the joint signal set. See the grounding/provenance panel of the results page for the exact input → entity mapping (or "unresolved", per favorite, if a name missed).
+**What resolved on the graph.** Each favorite was grounded via `/search`. The "Inception" and "City of God" inputs resolved to canonical movie entities, and their entity ids joined the joint signal set. See the grounding/provenance panel of the results page for the exact input → entity mapping per member — or "unresolved", per favorite, for any name the graph missed. As an isolated live check, these two grounded entity ids alone, sent as a two-member squad signal, surfaced "Léon: The Professional" at affinity 0.95 — a film the pair had already watched and enjoyed, independently re-verified.
 
 **Joint ranking output.** With all grounded entity ids sent in `signal.interests.entities`:
 
 - Dining: top candidate was a Flatiron-class venue at Qloo affinity 0.94, with Lagos localities listed among the candidates (Afrinolly Creative Hub Ikeja, Crescendo Lounge Ikeja GRA, Crepaway Victoria Island, NOK by Alara).
 - Movies: top candidate was "Whiplash" at Qloo affinity 0.901; the shortlist below it included "The Shawshank Redemption" at 0.888 and "Taxi Driver" at 0.885 — the margins that make the negotiation transcript readable.
-- In the companion re-verification, the squad {Inception, City of God} ranked "Léon: The Professional" first at 0.95.
 
 **What the narrator wrote.** Gemini 3.8-flash (JSON mode) receives only the Qloo facts — grounded favorite mappings, city, and the top-4 candidate/affinity pairs for each category. It returned the schema of `headline`, `whyMovie`, `whyFood`, `negotiation` (exactly 3 lines, one per losing candidate, each carrying that candidate's affinity number), and `squadVibe`. The transcript names specific losers by their affinity — e.g. the 0.888 and 0.885 shortlist entries — so a reader can see the actual margins, not a summary.
 
-**What the counterfactual answered.** The identical squad was sent to the same model under the counterfactual system prompt ("You cannot know how any audience's preferences correlate"). It answered exactly like a generic assistant: a safe, mainstream, popularity-flavored pair with generalized reasoning ("something everyone usually likes"). It produced no affinity numbers because it has no taste data — that is the point of the side-by-side panel.
+**What the counterfactual answered.** The identical squad was sent to the same model under the counterfactual system prompt ("You cannot know how any audience's preferences correlate"). It answered exactly like a generic assistant: a safe, mainstream, popularity-flavored pair with generalized reasoning, and no affinity numbers because it has no taste data. That contrast — same squad, same model, no graph — is what the side-by-side panel shows.
 
 ## Run it locally from a clean environment
 
@@ -85,19 +84,21 @@ src/
   app/
     page.tsx                    Landing page — what this is, how it works.
     night/page.tsx              Squad room shell.
-    night/room.tsx              Member/manager logic: squads of 2-5, name + up to 3 favorites each, city.
-    night/console.tsx           Results UI: affinity bars, negotiation transcript, counterfactual panel, provenance.
-    night/result/page.tsx       Result route; reads the squad from the URL, POSTs to /api/negotiate, renders console.
-    api/negotiate/route.ts      Agent endpoint (server-only). POST { members, city? }.
+    night/room.tsx              Squad-building UI: 2-5 members, name + up to 3 free-text favorites each, optional city.
+    night/console.tsx           Results view (client): reads the squad from the URL, POSTs /api/negotiate,
+                                and renders affinity bars, the negotiation transcript, the counterfactual
+                                panel, and the grounding/provenance report.
+    night/result/page.tsx       Server shell (Suspense wrapper) around the results view.
+    api/negotiate/route.ts      The agent endpoint (server-only). POST { members, city? }.
   lib/
-    agent/pipeline.ts           The 5-step pipeline: normalize/ground/gather/negotiate/narrate.
-    agent/llm.ts                Thin Gemini wrapper (JSON mode) for narration and counterfactual.
-    qloo/liveld.ts              (unused; see live.ts)
-    qloo/live.ts                Live Qloo client: /search grounding, /v2/insights joint ranking, city filter, exclusions.
-    qloo/mock.ts                Deterministic offline stand-in, for local dev without QLOO_API_KEY.
-    qloo/index.ts               Client factory: live if QLOO_API_KEY is set, mock otherwise.
-    qloo/client.ts              Shared client interface types.
-    qloo/types.ts               Qloo entity types used by the pipeline.
+    agent/pipeline.ts           The 5-step pipeline: normalize → ground → gather → negotiate → narrate.
+    agent/llm.ts                Minimal Gemini wrapper (JSON mode) for narration and the counterfactual.
+    qloo/live.ts                Live Qloo client: /search grounding, /v2/insights joint ranking with
+                                signal.interests.entities, filter.location.query, filter.exclude.entities.
+    qloo/mock.ts                Deterministic offline stand-in used when QLOO_API_KEY is unset.
+    qloo/index.ts               Client factory: live client if QLOO_API_KEY is set, mock otherwise.
+    qloo/client.ts              Shared Qloo client interface and request/response types.
+    qloo/types.ts               Qloo entity type constants used by the pipeline.
     squad/codec.ts              Base64URL codec that keeps squad state in the shareable URL.
 ```
 
