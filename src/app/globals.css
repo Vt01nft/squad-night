@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  /* Squad Night: dusk-cinema palette. One warm accent over deep neutrals. */
+  --background: #0a0a0f;
+  --ink: #f4f1ea;
+  --muted: #9a94a8;
+  --surface: #131319;
+  --surface-2: #1a1a23;
+  --line: #26262f;
+  --accent: #ff7a3d;
+  --accent-deep: #c14a18;
+  --accent-soft: rgba(255, 122, 61, 0.12);
+  --good: #5dd39e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+/* Card primitive: one surface treatment for every panel in the app. */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+}
+
+/* Editorial rule above section labels. */
+.eyebrow {
+  border-top: 2px solid var(--accent);
+  display: inline-block;
+  padding-top: 0.5rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
