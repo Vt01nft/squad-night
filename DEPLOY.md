@@ -69,8 +69,9 @@ $value = ((Get-Content .env.local) -imatch '^GEMINI_API_KEY=')[0] -ireplace '^GE
 if ([string]::IsNullOrWhiteSpace($value)) { throw "GEMINI_API_KEY not found in .env.local" }
 $value | vercel env add GEMINI_API_KEY production
 
-# 3.4 GEMINI_MODEL — only if overriding (route default: gemini-3.8-flash)
-$value = "gemini-3.8-flash"   # replace with the override target, or skip 3.4 entirely
+# 3.4 GEMINI_MODEL — only if overriding (route default: gemini-3.6-flash; a
+# ladder retries 3.5-flash then 3.8-flash on transient 5xx/timeouts)
+$value = "gemini-3.6-flash"   # replace with the override target, or skip 3.4 entirely
 $value | vercel env add GEMINI_MODEL production
 
 # 3.5 LLM_PROVIDER

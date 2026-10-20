@@ -12,7 +12,7 @@ The pipeline runs five steps. Each step maps to a real file.
 2. **Ground** — every free-text favorite is resolved (or explicitly not resolved) to a canonical Qloo entity. `src/lib/qloo/live.ts`
 3. **Gather** — all grounded entity ids are sent as one joint signal to rank movie and dining candidates. `src/lib/qloo/live.ts`
 4. **Negotiate** — the winner, per category, is simply Qloo's top-ranked candidate; its affinity score is carried verbatim. `src/lib/agent/pipeline.ts`
-5. **Narrate** — Gemini 3.8-flash in JSON mode writes the headline, pick rationales, a 3-line "negotiation transcript" of losing candidates, and the squad vibe, constrained to facts traceable to the Qloo payload with cited numbers; a second prompt asks the same model, stripped of all taste data, what it would answer (the counterfactual). `src/lib/agent/llm.ts`, `src/lib/agent/pipeline.ts`
+5. **Narrate** — Gemini flash (3.6 primary; a JSON-mode model ladder) writes the headline, pick rationales, a 3-line "negotiation transcript" of losing candidates, and the squad vibe, constrained to facts traceable to the Qloo payload with cited numbers; a second prompt asks the same model, stripped of all taste data, what it would answer (the counterfactual). `src/lib/agent/llm.ts`, `src/lib/agent/pipeline.ts`
 
 The narrator prompt states the rule directly: "Every claim must be traceable to the provided Qloo facts." The LLM never invents a pick or a number — it only writes prose about Qloo's facts.
 
@@ -48,7 +48,7 @@ Verified live run for a two-member squad (names and exact inputs marked in redac
 - Dining: top candidate was a Flatiron-class venue at Qloo affinity 0.94, with Lagos localities listed among the candidates (Afrinolly Creative Hub Ikeja, Crescendo Lounge Ikeja GRA, Crepaway Victoria Island, NOK by Alara).
 - Movies: top candidate was "Whiplash" at Qloo affinity 0.901; the shortlist below it included "The Shawshank Redemption" at 0.888 and "Taxi Driver" at 0.885 — the margins that make the negotiation transcript readable.
 
-**What the narrator wrote.** Gemini 3.8-flash (JSON mode) receives only the Qloo facts — grounded favorite mappings, city, and the top-4 candidate/affinity pairs for each category. It returned the schema of `headline`, `whyMovie`, `whyFood`, `negotiation` (exactly 3 lines, one per losing candidate, each carrying that candidate's affinity number), and `squadVibe`. The transcript names specific losers by their affinity — e.g. the 0.888 and 0.885 shortlist entries — so a reader can see the actual margins, not a summary.
+**What the narrator wrote.** Gemini 3.6-flash (JSON mode) receives only the Qloo facts — grounded favorite mappings, city, and the top-4 candidate/affinity pairs for each category. It returned the schema of `headline`, `whyMovie`, `whyFood`, `negotiation` (exactly 3 lines, one per losing candidate, each carrying that candidate's affinity number), and `squadVibe`. The transcript names specific losers by their affinity — e.g. the 0.888 and 0.885 shortlist entries — so a reader can see the actual margins, not a summary.
 
 **What the counterfactual answered.** The identical squad was sent to the same model under the counterfactual system prompt ("You cannot know how any audience's preferences correlate"). It answered exactly like a generic assistant: a safe, mainstream, popularity-flavored pair with generalized reasoning, and no affinity numbers because it has no taste data. That contrast — same squad, same model, no graph — is what the side-by-side panel shows.
 
@@ -61,7 +61,7 @@ Verified live run for a two-member squad (names and exact inputs marked in redac
    - `QLOO_BASE_URL=https://hackathon.api.qloo.com`
    - `GEMINI_API_KEY=<your Gemini API key>`
    - `LLM_PROVIDER=gemini`
-   - Note: `GEMINI_MODEL` defaults to `gemini-3.8-flash`. Override it if your key has model restrictions.
+   - Note: `GEMINI_MODEL` defaults to `gemini-3.6-flash`; failures retry down a model ladder (3.5-flash, 3.8-flash). Override only to force a specific model.
 4. `npm run dev`
 5. Open http://localhost:3000.
 
