@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -7,7 +7,7 @@ import { decodeSquad, encodeSquad, type SquadMember } from "@/lib/squad/codec";
 
 /**
  * The squad room. Every member contributes three free-text favorites; state
- * lives in the shareable URL (?p=…) so refresh never loses the table and the
+ * lives in the shareable URL (?p=â€¦) so refresh never loses the table and the
  * link alone carries the squad anywhere.
  */
 
@@ -74,7 +74,7 @@ export function SquadRoom() {
           </span>
         </Link>
         <p className="num text-xs text-muted">
-          {members.length} member{members.length === 1 ? "" : "s"} · {totalPicks} favorites
+          {members.length} member{members.length === 1 ? "" : "s"} Â· {totalPicks} favorites
         </p>
       </header>
 
@@ -107,7 +107,7 @@ export function SquadRoom() {
                   </button>
                 )}
               </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
                 {member.picks.map((pick, pickIndex) => (
                   <input
                     key={pickIndex}
@@ -122,7 +122,7 @@ export function SquadRoom() {
           ))}
         </div>
 
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <button
             type="button"
             onClick={() => setMembers((current) => [...current, blank()])}
@@ -132,7 +132,7 @@ export function SquadRoom() {
             <span className="text-sm font-semibold text-accent">Add another friend</span>
             <p className="mt-1.5 text-sm text-muted">
               {members.length >= MAX_MEMBERS
-                ? "Five is the cap — the negotiator needs the argument small enough to resolve."
+                ? "Five is the cap â€” the negotiator needs the argument small enough to resolve."
                 : "Each person you add sharpens the negotiation."}
             </p>
           </button>
@@ -145,7 +145,7 @@ export function SquadRoom() {
               id="city"
               value={city}
               onChange={(event) => setCity(event.target.value)}
-              placeholder="Lagos, NYC, London…"
+              placeholder="Lagos, NYC, Londonâ€¦"
               className="mt-3 w-full rounded-lg border border-line bg-surface-2 px-3.5 py-3 text-sm text-ink placeholder:text-muted/50 focus:border-accent focus:outline-none"
             />
           </div>

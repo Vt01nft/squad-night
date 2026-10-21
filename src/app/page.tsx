@@ -1,8 +1,9 @@
 import Link from "next/link";
 
 /**
- * Landing: establishes the promise in one screen and routes judges straight
- * into the live squad room. The first thirty seconds have to land here.
+ * Landing: one screen establishes the promise and shows a real verdict
+ * artifact (actual Qloo numbers from a live negotiation), then routes
+ * judges into the squad room. First thirty seconds land here.
  */
 
 const phases = [
@@ -20,55 +21,103 @@ const phases = [
   },
 ];
 
+/** The artifact judges see first: real numbers from a live Lagos negotiation. */
+const PreviewCard = () => (
+  <div className="poster card overflow-hidden p-0 md:rotate-[0.4deg]">
+    <p className="num border-b border-line px-6 py-3.5 text-[0.7rem] text-muted">
+      verdict · Ayo &amp; Ada, Lagos · two friends, six favorites
+    </p>
+    <div className="space-y-5 px-6 py-6">
+      <div>
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="font-display text-lg font-semibold text-ink">Whiplash</span>
+          <span className="num text-lg font-bold text-accent">88%</span>
+        </div>
+        <div className="meter mt-2.5" style={{ ["--value" as string]: 0.88 }} />
+        <p className="mt-2 text-xs text-muted">film · Qloo joint affinity across the squad</p>
+      </div>
+      <div>
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="font-display text-lg font-semibold text-ink">Crescendo Lounge And Bar</span>
+          <span className="num text-lg font-bold text-accent">85%</span>
+        </div>
+        <div className="meter mt-2.5" style={{ ["--value" as string]: 0.85 }} />
+        <p className="mt-2 text-xs text-muted">table · grounded in Lagos, not popularity</p>
+      </div>
+      <div className="border-t border-line pt-4">
+        <p className="num text-xs leading-relaxed text-muted">
+          lost: Knives Out (0.71) — the transcript keeps
+          <br />
+          every number, including the losers.
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
 export default function Home() {
   return (
     <div className="min-h-dvh">
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-6 pt-8">
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 pt-8">
         <div className="flex items-center gap-2.5">
           <div className="h-2.5 w-2.5 rounded-full bg-accent" />
-          <span className="font-mono text-sm font-semibold tracking-[0.2em] uppercase text-ink">
+          <span className="font-mono text-sm font-semibold uppercase tracking-[0.2em] text-ink">
             Squad Night
           </span>
         </div>
         <p className="text-xs text-muted">Qloo Agentic Hackathon, October 2026</p>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6">
-        <section className="pt-24 pb-16 md:pt-36 md:pb-24">
-          <h1 className="max-w-4xl font-display text-[clamp(2.75rem,7vw,5.5rem)] font-semibold leading-[1.02] tracking-[-0.02em] text-ink">
-            The night-out plan
-            <br />
-            your group chat keeps
-            <span className="font-display italic font-medium"> arguing about</span>, settled.
-          </h1>
-          <p className="mt-8 max-w-xl text-lg leading-relaxed text-muted">
-            Each friend names what they honestly love. Squad Night reads those names against
-            Qloo&apos;s cultural graph, a quarter of a million entities deep, then negotiates one
-            film and one table the whole squad is glad to show up for. Losing options keep their
-            scores on screen; nothing is smoothed over.
-          </p>
-          <div className="mt-11 flex flex-wrap items-center gap-4">
-            <Link
-              href="/night"
-              className="rounded-xl bg-accent px-8 py-4 font-semibold text-[#1d1207] transition-colors hover:bg-accent-deep hover:text-[#ffe6cc]"
-            >
-              Start a squad
-            </Link>
-            <a href="#how" className="text-muted transition-colors hover:text-ink underline-offset-4 hover:underline">
-              See how it negotiates
-            </a>
+      <main className="mx-auto max-w-6xl px-6">
+        <section className="relative grid grid-cols-[minmax(0,1fr)] gap-14 overflow-hidden pb-20 pt-16 md:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] md:items-center md:pb-28 md:pt-24">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-40 left-0 hidden h-[560px] w-[720px] md:block"
+            style={{
+              background:
+                "radial-gradient(640px 340px at 28% 30%, rgba(240,163,92,0.15), transparent 70%)",
+            }}
+          />
+          <div className="reveal-item relative">
+            <h1 className="max-w-full font-display text-[clamp(2.25rem,6.4vw,5.6rem)] font-semibold leading-[0.99] tracking-[-0.025em] text-ink md:max-w-[19ch]">
+              The night-out plan your group chat keeps
+              <span className="font-display italic font-medium text-accent"> arguing about</span>, settled.
+            </h1>
+            <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted">
+              Each friend names what they honestly love. Squad Night reads those names against
+              Qloo&apos;s cultural graph, a quarter of a million entities deep, then negotiates one
+              film and one table the whole squad is glad to show up for. Losing options keep their
+              scores on screen; nothing is smoothed over.
+            </p>
+            <div className="mt-9 flex flex-wrap items-center gap-4">
+              <Link
+                href="/night"
+                className="rounded-xl bg-accent px-8 py-4 font-semibold text-[#231204] transition-colors hover:bg-accent-deep hover:text-[#ffe9d1]"
+              >
+                Start a squad
+              </Link>
+              <a
+                href="#how"
+                className="text-muted transition-colors hover:text-ink underline-offset-4 hover:underline"
+              >
+                See how it negotiates
+              </a>
+            </div>
+            <p className="num mt-7 text-xs text-muted">
+              live, no account, no app to install · keys stay on the server
+            </p>
           </div>
-          <p className="mt-7 font-mono text-xs text-muted">
-            Live, no account, no app to install. Keys stay on the server.
-          </p>
+          <div className="reveal-item relative" style={{ ["--step" as string]: 2 }}>
+            <PreviewCard />
+          </div>
         </section>
 
         <section id="how" className="pb-24">
           <div className="divide-y divide-line border-y border-line">
             {phases.map((phase, index) => (
-              <div key={phase.when} className="grid gap-2 py-8 md:grid-cols-[130px_1fr] md:gap-10">
-                <div className="num text-xs uppercase tracking-[0.16em] text-accent">
-                  {String(index + 1).padStart(2, "0")}
+              <div key={phase.when} className="grid gap-2 py-8 md:grid-cols-[120px_minmax(0,1fr)] md:gap-10">
+                <div className="font-display text-2xl italic font-medium text-accent">
+                  {String(index + 1).padStart(2, "0")}.
                 </div>
                 <div>
                   <h2 className="font-display text-xl font-semibold text-ink">{phase.when}</h2>
@@ -81,7 +130,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-line py-10">
-        <p className="mx-auto max-w-5xl px-6 font-mono text-xs leading-relaxed text-muted">
+        <p className="mx-auto max-w-6xl px-6 num text-xs leading-relaxed text-muted">
           Qloo describes what people tend to love; it does not claim to know any one person.
           Affinity numbers on screen are Qloo&apos;s own, passed through verbatim.
         </p>
